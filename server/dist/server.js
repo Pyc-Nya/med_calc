@@ -6,7 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // med_calc_server/src/server.ts
 const express_1 = __importDefault(require("express"));
 const body_parser_1 = __importDefault(require("body-parser"));
-const cors_1 = __importDefault(require("cors"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 // --- Хранилище данных (использование JSON-файла) ---
@@ -45,13 +44,25 @@ const writePatientsData = (data) => {
 };
 // --- Настройка Express-приложения ---
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 3001; // Порт, на котором будет работать сервер (по умолчанию 3001)
+const PORT = process.env.PORT || 3001;
+// --- Важные изменения здесь ---
+// 1. Указываем путь к папке со статическими файлами клиента
+// Эта папка должна содержать скомпилированный клиент (index.html, JS, CSS и т.д.)
+// Мы предполагаем, что после сборки клиента вы скопируете содержимое client/build
+// в server/public.
+const clientBuildPath = path_1.default.resolve(__dirname, '../public'); // <-- Путь к статическим файлам клиента
 // Middleware
-app.use((0, cors_1.default)({
-    origin: 'http://localhost:3000' // Разрешить запросы только с этого источника
-}));
+// Отключаем CORS для всех запросов, потому что теперь клиент и сервер будут на одном источнике.
+// Если клиент запрашивает статические файлы с того же порта, CORS не нужен.
+// Если API-запросы идут на тот же порт, CORS тоже не нужен.
+// app.use(cors({ origin: 'http://localhost:3000' })); // Закомментируйте или удалите эту строку!
 app.use(body_parser_1.default.json()); // Парсинг JSON-тел запросов
+// Обслуживание статических файлов
+// Это middleware должно идти ДО ваших API-эндпоинтов, чтобы сначала проверялись статические файлы.
+app.use(express_1.default.static(clientBuildPath));
 // --- API-эндпоинты ---
+// Все ваши API-эндпоинты должны быть ПЕРЕД блоком, который отправляет index.html
+// для всех остальных запросов. Иначе запросы к /api будут перехватываться.
 // GET /api/patients - Получить список всех пациентов (только ID и имя)
 app.get('/api/patients', (req, res) => {
     const patients = readPatientsData();
@@ -73,14 +84,12 @@ app.get('/api/patients/:id', (req, res) => {
 // POST /api/patients - Создать нового пациента или обновить существующего
 app.post('/api/patients', (req, res) => {
     const { id, name, cells, pdfConclusion1, pdfConclusion2, doctorName, reportName, date, weight, height, age, sex } = req.body;
-    let patients = readPatientsData(); // Читаем текущие данные всех пациентов
-    // Ищем пациента по предоставленному ID
+    let patients = readPatientsData();
     const index = patients.findIndex(p => p.id === id);
     let updatedPatient;
     if (index !== -1) {
-        // Если пациент с таким ID найден, обновляем его данные
         updatedPatient = {
-            ...patients[index], // Копируем существующие данные
+            ...patients[index],
             name,
             cells,
             pdfConclusion1,
@@ -93,10 +102,10 @@ app.post('/api/patients', (req, res) => {
             age,
             sex
         };
-        patients[index] = updatedPatient; // Заменяем старые данные в массиве
-        writePatientsData(patients); // Сохраняем обновлённый массив в файл
+        patients[index] = updatedPatient;
+        writePatientsData(patients);
         console.log(`Пациент с ID ${id} обновлен.`);
-        return res.status(200).json(updatedPatient); // 200 OK для успешного обновления
+        return res.status(200).json(updatedPatient);
     }
     else {
         updatedPatient = {
@@ -113,13 +122,13 @@ app.post('/api/patients', (req, res) => {
             age,
             sex
         };
-        patients.push(updatedPatient); // Добавляем нового пациента в массив
-        writePatientsData(patients); // Сохраняем обновлённый массив в файл
+        patients.push(updatedPatient);
+        writePatientsData(patients);
         console.log(`Новый пациент с ID ${id} создан.`);
-        return res.status(201).json(updatedPatient); // 201 Created для нового ресурса
+        return res.status(201).json(updatedPatient);
     }
 });
-// DELETE /api/patients/:id - Удалить пациента (добавим для полноты)
+// DELETE /api/patients/:id - Удалить пациента
 app.delete('/api/patients/:id', (req, res) => {
     const patientId = req.params.id;
     let patients = readPatientsData();
@@ -127,7 +136,7 @@ app.delete('/api/patients/:id', (req, res) => {
     patients = patients.filter(p => p.id !== patientId);
     if (patients.length < initialLength) {
         writePatientsData(patients);
-        res.status(204).send(); // 204 No Content для успешного удаления
+        res.status(204).send();
     }
     else {
         res.status(404).json({ message: 'Пациент не найден для удаления' });
@@ -135,16 +144,22 @@ app.delete('/api/patients/:id', (req, res) => {
 });
 app.delete("/api/clear_patients", (req, res) => {
     writePatientsData([]);
-    res.status(204).send(); // 204 No Content для успешного удаления
+    res.status(204).send();
+});
+// --- Обработка всех остальных запросов (для React Router) ---
+// Этот middleware должен идти ПОСЛЕ всех ваших API-эндпоинтов
+// Он гарантирует, что для любого запроса, который не является API или статическим файлом,
+// будет отправлен index.html вашего React-приложения.
+app.get('/', (req, res) => {
+    res.sendFile(path_1.default.join(clientBuildPath, 'index.html'));
 });
 // --- Запуск сервера ---
 app.listen(PORT, () => {
-    // Убедимся, что папка data существует при запуске сервера
     const dataDir = path_1.default.resolve(__dirname, '../data');
     if (!fs_1.default.existsSync(dataDir)) {
         fs_1.default.mkdirSync(dataDir);
     }
-    // И убедимся, что файл patients.json создан, если его нет
-    readPatientsData(); // Это вызовет создание файла, если его нет
+    readPatientsData();
     console.log(`Сервер запущен на http://localhost:${PORT}`);
+    console.log(`Обслуживание статических файлов из: ${clientBuildPath}`);
 });
