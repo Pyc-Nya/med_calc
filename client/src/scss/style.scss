@@ -1,0 +1,34 @@
+@import "_nullstyle";
+@import "_container";
+
+@font-face {
+  font-family: "Calibri";
+  src: url("../static_assets/fonts/calibri.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: 'Material Icons';
+  src: url("../static_assets/fonts/MaterialSymbolsOutlined-Regular.ttf") format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Calibri"; // То же самое имя семейства шрифтов
+  src: url("../static_assets/fonts/calibri_bold.ttf") format("truetype");
+  font-weight: bold; // Указываем, что этот файл для жирного начертания
+  font-style: normal;
+}
+
+.material-icons {
+  font-family: 'Material Icons', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  display: inline-block;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+}
