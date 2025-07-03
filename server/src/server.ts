@@ -32,8 +32,15 @@ export interface PatientData {
   id: string;        // Уникальный ID пациента
   name: string;      // Имя пациента (для отображения в списке)
   cells: PatientCells; // Данные редактируемых ячеек таблицы
+  date: string;       // Дата рождения
+  weight: number;     // Вес
+  height: number;     // Рост
+  age: number;        // Возраст
+  sex: string;        // Пол
   pdfConclusion1: string; // Текст первого заключения для PDF
   pdfConclusion2: string; // Текст второго заключения для PDF
+  doctorName: string; // Имя врача
+  reportName: string; // Название отчёта
 }
 
 // --- Хранилище данных (использование JSON-файла) ---
@@ -86,7 +93,7 @@ app.use(bodyParser.json()); // Парсинг JSON-тел запросов
 // GET /api/patients - Получить список всех пациентов (только ID и имя)
 app.get('/api/patients', (req, res) => {
   const patients = readPatientsData();
-  const patientList = patients.map(({ id, name }) => ({ id, name }));
+  const patientList = patients.map(({ id, reportName }) => ({ id, reportName }));
   res.json(patientList);
 });
 
@@ -105,34 +112,54 @@ app.get('/api/patients/:id', (req, res) => {
 
 // POST /api/patients - Создать нового пациента или обновить существующего
 app.post('/api/patients', (req: any, res: any) => {
-  const { id, name, cells, pdfConclusion1, pdfConclusion2 } = req.body as PatientData;
-  let patients = readPatientsData();
+  const { id, name, cells, pdfConclusion1, pdfConclusion2, doctorName, reportName, date, weight, height, age, sex } = req.body as PatientData;
+  let patients = readPatientsData(); // Читаем текущие данные всех пациентов
 
-  if (!name || !cells) {
-    return res.status(400).json({ message: 'Имя и данные ячеек обязательны.' });
-  }
+  // Ищем пациента по предоставленному ID
+  const index = patients.findIndex(p => p.id === id);
 
   let updatedPatient: PatientData;
 
-  if (id) {
-    // Если ID предоставлен, пробуем обновить существующего пациента
-    const index = patients.findIndex(p => p.id === id);
-    if (index !== -1) {
-      updatedPatient = { ...patients[index], name, cells, pdfConclusion1, pdfConclusion2 };
-      patients[index] = updatedPatient;
-      writePatientsData(patients);
-      return res.status(200).json(updatedPatient);
-    }
-    // Если ID предоставлен, но пациент не найден, создаем нового с этим ID (или можно вернуть 404/400)
-    // В данном случае, мы создадим нового, чтобы не усложнять логику клиента
+  if (index !== -1) {
+    // Если пациент с таким ID найден, обновляем его данные
+    updatedPatient = {
+      ...patients[index], // Копируем существующие данные
+      name,
+      cells,
+      pdfConclusion1,
+      pdfConclusion2,
+      doctorName,
+      reportName,
+      date,
+      weight,
+      height,
+      age,
+      sex
+    };
+    patients[index] = updatedPatient; // Заменяем старые данные в массиве
+    writePatientsData(patients); // Сохраняем обновлённый массив в файл
+    console.log(`Пациент с ID ${id} обновлен.`);
+    return res.status(200).json(updatedPatient); // 200 OK для успешного обновления
+  } else {
+    updatedPatient = {
+      id,
+      name,
+      cells,
+      pdfConclusion1,
+      pdfConclusion2,
+      doctorName,
+      reportName,
+      date,
+      weight,
+      height,
+      age,
+      sex
+    };
+    patients.push(updatedPatient); // Добавляем нового пациента в массив
+    writePatientsData(patients); // Сохраняем обновлённый массив в файл
+    console.log(`Новый пациент с ID ${id} создан.`);
+    return res.status(201).json(updatedPatient); // 201 Created для нового ресурса
   }
-
-  // Создать нового пациента (генерируем новый ID, если не был предоставлен или найден)
-  const newId = uuidv4();
-  updatedPatient = { id: newId, name, cells, pdfConclusion1, pdfConclusion2 };
-  patients.push(updatedPatient);
-  writePatientsData(patients);
-  return res.status(201).json(updatedPatient); // 201 Created для нового ресурса
 });
 
 // DELETE /api/patients/:id - Удалить пациента (добавим для полноты)
@@ -150,6 +177,10 @@ app.delete('/api/patients/:id', (req, res) => {
   }
 });
 
+app.delete("/api/clear_patients", (req, res) => {
+  writePatientsData([]);
+  res.status(204).send(); // 204 No Content для успешного удаления
+});
 
 // --- Запуск сервера ---
 app.listen(PORT, () => {
