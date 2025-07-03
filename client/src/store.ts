@@ -1,4 +1,6 @@
 import { makeAutoObservable, runInAction } from "mobx";
+import { v4 as uuidv4 } from 'uuid';
+import { makeFetch } from "./myfetch";
 
 
 export type tableCell = {
@@ -34,6 +36,49 @@ type patientData = {
   date: string
 }
 
+type screen = {
+  id: string,
+  name: string
+}
+
+const mockCells: Record<EditableCellId, editableCell> = {
+  G6: {value: "", id: "G6"},
+  H6: {value: "", id: "H6"},
+  J6: {value: "", id: "J6"},
+  K6: {value: "", id: "K6"},
+
+  G7: {value: "", id: "G7"},
+  H7: {value: "", id: "H7"},
+  J7: {value: "", id: "J7"},
+  K7: {value: "", id: "K7"},
+
+  G8: {value: "", id: "G8"},
+  H8: {value: "", id: "H8"},
+  J8: {value: "", id: "J8"},
+  K8: {value: "", id: "K8"},
+
+  H10: {value: "", id: "H10"},
+  K10: {value: "", id: "K10"},
+
+  H11: {value: "", id: "H11"},
+  K11: {value: "", id: "K11"},
+
+  H12: {value: "", id: "H12"},
+  K12: {value: "", id: "K12"},
+
+  H13: {value: "", id: "H13"},
+  K13: {value: "", id: "K13"},
+}
+
+const mockPatient = {
+  name: "Иванов Иван Иванович",
+  age: 0,
+  sex: "Мужской",
+  height: 0,
+  weight: 0,
+  date: ""
+}
+
 type Row = [tableCell, tableCell, tableCell, tableCell, tableCell, tableCell, tableCell, tableCell];
 interface command {
   undo: () => void,
@@ -44,42 +89,24 @@ class Store {
   toFixedValue = 2;
   pdfConclusion1 = "";
   pdfConclusion2 = "";
-  patient: patientData = {name: "", age: 0, sex: "", height: 0, weight: 0, date: ""};
+  patient: patientData = mockPatient;
+  patientsCache: Record<string, PatientServerData> = {};
+  doctorName: string = "Иванов И.И.";
+  screens: Record<string, screen> = {};
+  activeScreenId: string = "main";
+  patientList: {id: string, reportName: string}[] = [];
   private h9 = 0;
   private k9 = 0;
+  private m7 = 0;
+  private m9 = 0;
+  private m12 = 0;
+  private m13 = 0;
   private undoStack: command[] = [];
   private redoStack: command[] = [];
-  cells: Record<EditableCellId, editableCell> = {
-    G6: {value: "", id: "G6"},
-    H6: {value: "", id: "H6"},
-    J6: {value: "", id: "J6"},
-    K6: {value: "", id: "K6"},
-
-    G7: {value: "", id: "G7"},
-    H7: {value: "", id: "H7"},
-    J7: {value: "", id: "J7"},
-    K7: {value: "", id: "K7"},
-
-    G8: {value: "", id: "G8"},
-    H8: {value: "", id: "H8"},
-    J8: {value: "", id: "J8"},
-    K8: {value: "", id: "K8"},
-
-    H10: {value: "", id: "H10"},
-    K10: {value: "", id: "K10"},
-
-    H11: {value: "", id: "H11"},
-    K11: {value: "", id: "K11"},
-
-    H12: {value: "", id: "H12"},
-    K12: {value: "", id: "K12"},
-
-    H13: {value: "", id: "H13"},
-    K13: {value: "", id: "K13"},
-  };
+  cells: Record<EditableCellId, editableCell> = mockCells;
 
   constructor() {
-    makeAutoObservable(this);
+    makeAutoObservable(this, {}, { autoBind: true });
   }
 
   private get (id: EditableCellId): number {
@@ -95,7 +122,6 @@ class Store {
 
     if (allowedCharsRegex.test(value)) {
       this.cells[id].value = value;
-      localStorage.setItem(id, value);
     } else {
       console.warn(
         `Invalid input for cell ${id}: "${value}". Only numbers, '.', ',', and '-' are allowed.`
@@ -126,24 +152,89 @@ class Store {
     }
   }
 
-  updatePatientName (name: string) { this.patient.name = name; }
-  updatePatientAge (age: number) { this.patient.age = age; }
-  updatePatientSex (sex: string) { this.patient.sex = sex; }
-  updatePatientHeight (height: number) { this.patient.height = height; }
-  updatePatientWeight (weight: number) { this.patient.weight = weight; }
+  updatePatientName (name: string) { this.patient.name = name;  }
+  updatePatientAge (age: number) { this.patient.age = age;  }
+  updatePatientSex (sex: string) { this.patient.sex = sex;  }
+  updatePatientHeight (height: number) { this.patient.height = height;  }
+  updatePatientWeight (weight: number) { this.patient.weight = weight;  }
   updatePatientDate (date: string) { this.patient.date = date; }
 
-  unpackLS () {
-    for (const id of EDITABLE_CELL_IDS) {
-      const value = localStorage.getItem(id);
-      if (value) {
-        this.cells[id].value = value;
-      }
+  updateActiveScreen (id: string) { 
+    if (this.activeScreenId !== "main" && this.screens[this.activeScreenId]) {
+      this.patientsCache[this.activeScreenId] = {
+        ...this.patient,
+        cells: this.cells,
+        doctorName: this.doctorName,
+        reportName: this.screens[this.activeScreenId].name,
+        id: this.activeScreenId,
+        pdfConclusion1: this.pdfConclusion1,
+        pdfConclusion2: this.pdfConclusion2
+      };
     }
+    if (id !== "main" && this.patientsCache[id]) {
+      this.cells = this.patientsCache[id].cells;
+      this.patient = this.patientsCache[id];
+      this.doctorName = this.patientsCache[id].doctorName;
+
+      requestAnimationFrame(() => {
+        runInAction(() => {
+          this.pdfConclusion1 = this.patientsCache[id].pdfConclusion1;
+          this.pdfConclusion2 = this.patientsCache[id].pdfConclusion2;
+        })
+      })
+    }
+    this.activeScreenId = id; 
+  }
+  createNewPatient () { 
+    this.patient = mockPatient; 
+    this.cells = mockCells;
+    const id = uuidv4();
+    this.screens[id] = { id: id, name: "Новый Пациент" };
+    this.updateActiveScreen(id);
+  }
+  updateScreenName (id: string, name: string) { this.screens[id].name = name; }
+  deleteScreen (id: string) { 
+    delete this.screens[id]; 
+    this.updateActiveScreen("main");
   }
 
-  updateToFixedValue() {
-    this.toFixedValue = 2;
+  getLocaleDate(): string {
+    let formattedDate = this.patient.date;
+
+    if (this.patient.date) {
+      const dateParts = this.patient.date.split('-');
+      // Ensure dateParts has 3 elements and they are valid numbers
+      if (dateParts.length === 3 && dateParts.every(part => !isNaN(Number(part)))) {
+        // Construct a Date object (month is 0-indexed, so subtract 1)
+        const dateObj = new Date(
+          parseInt(dateParts[0]), // Year
+          parseInt(dateParts[1]) - 1, // Month (0-11)
+          parseInt(dateParts[2]) // Day
+        );
+
+        // Check if the dateObj is a valid date
+        if (!isNaN(dateObj.getTime())) {
+          // Format the date using toLocaleDateString for Russian locale
+          formattedDate = dateObj.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+        }
+      }
+    }
+
+    return formattedDate;
+  }
+
+  get patientDataString() {
+    return `Имя: ${this.patient.name}\nВозраст: ${this.patient.age}\nПол: ${this.patient.sex}\nРост (см): ${this.patient.height}\nВес (кг): ${this.patient.weight}\nДата обследования: ${this.getLocaleDate()}`
+  }
+
+  updateDoctorName (name: string) { this.doctorName = name;  }
+
+  updateToFixedValue(value: number) {
+    this.toFixedValue = value;
   }
 
   updatePdfConclusion (text: string, number: 1 | 2) {
@@ -173,14 +264,19 @@ class Store {
 
     if (keyCode === "KeyZ") {
       const commandToUndo = this.undoStack.pop();
-      if (!commandToUndo) return;
+      if (!commandToUndo || this.activeScreenId === "main") return;
       commandToUndo.undo();
       this.redoStack.push(commandToUndo);
     } else if (keyCode === "KeyY") {
       const commandToRedo = this.redoStack.pop();
-      if (!commandToRedo) return;
+      if (!commandToRedo || this.activeScreenId === "main") return;
       commandToRedo.redo();
       this.undoStack.push(commandToRedo);
+    }
+    if (keyCode === "KeyS") {
+      event.preventDefault();
+      if (this.activeScreenId === "main") return;
+      this.savePatient();
     }
   };
 
@@ -228,7 +324,7 @@ class Store {
         isBold: false,
         id: "L6" 
       },
-      {editable: false, value: "", isBold: true, id: "M6"},
+      {editable: false, value: "", isBold: false, id: "M6"},
     ]
   }
 
@@ -240,6 +336,10 @@ class Store {
       m7Value = "#DIV/0!";
     } else {
       m7Value = roundNumber(((this.get("J7") - g7Value) / g7Value) * 100, this.toFixedValue);
+
+      runInAction(() => {
+        this.m7 = ((this.get("J7") - g7Value) / g7Value) * 100;
+      })
     }
 
     return [
@@ -318,6 +418,7 @@ class Store {
     runInAction(() => {
       this.h9 = h9;
       this.k9 = k9;
+      this.m9 = k9 - h9;
     })
 
     return [
@@ -432,6 +533,10 @@ class Store {
       m12Value = "#DIV/0!";
     } else {
       m12Value = roundNumber(((this.get("K12") - h12Value) / h12Value) * 100, this.toFixedValue);
+      
+      runInAction(() => {
+        this.m12 = ((this.get("K12") - h12Value) / h12Value) * 100;
+      })
     }
 
     return [
@@ -476,6 +581,10 @@ class Store {
       m13Value = "#DIV/0!";
     } else {
       m13Value = roundNumber(((this.get("K13") - h13Value) / h13Value) * 100, this.toFixedValue);
+      
+      runInAction(() => {
+        this.m13 = ((this.get("K13") - h13Value) / h13Value) * 100;
+      })
     }
 
     return [
@@ -558,6 +667,26 @@ class Store {
     }
   }
 
+  public get conclusion9(): string {
+    const M7 = this.m7
+    const M9 = this.m9
+    const M12 = this.m12
+    const M13 = this.m13
+
+    // Проверка для "положительная"
+    if (M7 < -20 && M13 < -40) {
+      return "Проба с бронхолитиком положительная";
+    } 
+    // Проверка для "сомнительная" (выполняется, если первое условие не истинно)
+    else if (M7 < -20 || M9 > 0.04 || M12 < -20 || M13 < -40) {
+      return "Проба с бронхолитиком сомнительная";
+    } 
+    // Если ни одно из вышеперечисленных условий не истинно
+    else {
+      return "Проба с бронхолитиком отрицательная";
+    }
+  }
+
   get conclusions(): string[] {
     return [
       this.conclusion1,
@@ -568,7 +697,80 @@ class Store {
       this.conclusion6,
       this.conclusion7,
       this.conclusion8,
+      this.conclusion9
     ];
+  }
+
+  async fetchPatientList(): Promise<{id: string, reportName: string}[]> {
+    const result = await ApiHandler.fetchPatientList();
+    runInAction(() => this.patientList = result);
+    return result;
+  }
+
+  async fetchPatient(id: string) {
+    if (this.patientsCache[id]) {
+      runInAction(() => {
+        this.patient = this.patientsCache[id];
+        this.cells = this.patientsCache[id].cells;
+        this.doctorName = this.patientsCache[id].doctorName;
+        this.updateActiveScreen(id);
+      })
+      return;
+    }
+
+    const result = await ApiHandler.fetchPatient(id);
+    runInAction(() => {
+      this.patient = result;
+      this.cells = result.cells;
+      this.doctorName = result.doctorName;
+
+      this.screens[id] = { id: id, name: result.reportName };
+      this.updateActiveScreen(id);
+    })
+
+    requestAnimationFrame(() => {
+      runInAction(() => {
+        this.pdfConclusion1 = result.pdfConclusion1;
+        this.pdfConclusion2 = result.pdfConclusion2;
+      })
+    })
+
+    runInAction(() => {
+      this.patientsCache[id] = result;
+    })
+  }
+
+  async savePatient(): Promise<void> {
+    const data: PatientServerData = {
+      id: this.activeScreenId,
+      name: this.patient.name,
+      cells: this.cells,
+      date: this.patient.date,
+      weight: this.patient.weight,
+      height: this.patient.height,
+      age: this.patient.age,
+      sex: this.patient.sex,
+      pdfConclusion1: this.pdfConclusion1,
+      pdfConclusion2: this.pdfConclusion2,
+      doctorName: this.doctorName,
+      reportName: this.screens[this.activeScreenId].name
+    }
+    await ApiHandler.savePatient(data);
+    this.fetchPatientList();
+  }
+
+  async deletePatient(id: string): Promise<void> {
+    const ok = confirm("Вы действительно хотите удалить данные о пациенте?");
+    if (!ok) return;
+    await ApiHandler.deletePatient(id);
+    this.fetchPatientList();
+  }
+
+  async clearPatients(): Promise<void> {
+    const ok = confirm("Вы действительно хотите удалить все данные о пациентах?");
+    if (!ok) return;
+    await ApiHandler.clearPatients();
+    this.fetchPatientList();
   }
 }
 
@@ -593,3 +795,100 @@ export function parseLocalizedNumber(value: string | number): number {
 }
 
 const roundNumber = (n: number, precision: number): string => (Math.round(n * 10 ** precision) / 10 ** precision).toFixed(precision).replace('.', ',');
+
+class ApiHandler {
+
+  static async fetchPatientList(): Promise<{id: string, reportName: string}[]> {
+    let result: {id: string, reportName: string}[] = [];
+    
+    await makeFetch(
+      "/api/patients",
+      {},
+      (data: {id: string, reportName: string}[]) => {
+        result = data;
+      },
+      (error: any) => {
+        console.error(error);
+      },
+      "получить список отчётов"
+    );
+
+    return result;
+  }
+
+  static async fetchPatient(id: string): Promise<PatientServerData> {
+    let result: PatientServerData = { id: "", name: "", cells: mockCells, date: "", weight: 0, height: 0, age: 0, sex: "", pdfConclusion1: "", pdfConclusion2: "", doctorName: "", reportName: "" };
+    await makeFetch(
+      `/api/patients/${id}`,
+      {},
+      (data: PatientServerData) => {
+        result = data;
+      },
+      (error: any) => {
+        console.error(error);
+      },
+      "получить данные о пациенте"
+    );
+
+    return result;
+  }
+
+  static async savePatient(data: PatientServerData): Promise<void> {
+    await makeFetch(
+      `/api/patients/`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+      () => {},
+      (error: any) => {
+        console.error(error);
+      },
+      "сохранить данные о пациенте",
+      true
+    );
+  }
+
+  static async deletePatient(id: string): Promise<void> {
+    await makeFetch(
+      `/api/patients/${id}`,
+      {
+        method: "DELETE",
+      },
+      () => {},
+      (error: any) => {
+        console.error(error);
+      },
+      "удалить данные о пациенте"
+    );
+  }
+
+  static async clearPatients(): Promise<void> {
+    await makeFetch(
+      `/api/clear_patients/`,
+      {
+        method: "DELETE",
+      },
+      () => {},
+      (error: any) => {
+        console.error(error);
+      },
+      "удалить все данные о пациентах"
+    );
+  }
+}
+
+interface PatientServerData {
+  id: string;        // Уникальный ID пациента
+  name: string;      // Имя пациента (для отображения в списке)
+  cells: Record<EditableCellId, editableCell>; // Данные редактируемых ячеек таблицы
+  date: string;       // Дата рождения
+  weight: number;     // Вес
+  height: number;     // Рост
+  age: number;        // Возраст
+  sex: string;        // Пол
+  pdfConclusion1: string; // Текст первого заключения для PDF
+  pdfConclusion2: string; // Текст второго заключения для PDF
+  doctorName: string; // Имя врача
+  reportName: string; // Название отчёта
+}

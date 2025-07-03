@@ -2,11 +2,15 @@
   max-width: 60%;
   margin: 0 auto;
   font-family: "Calibri";
+  padding-bottom: pxToEm(20px);
+  background: #fff;
+  position: relative;
 }
 
 .data-table {
   border-collapse: collapse;
   color: #333;
+  margin-top: pxToEm(20px);
 }
 
 .table-cell {
@@ -46,12 +50,14 @@
     font-size: pxToEm(24px);
     font-weight: bold;
     line-height: 1.2em;
+    margin-bottom: pxToEm(10px);
   }
 
   &__subtitle {
     font-size: pxToEm(20px);
     font-weight: bold;
     line-height: 1.2em;
+    margin-bottom: pxToEm(5px);
   }
 
   &__textarea {
@@ -59,7 +65,11 @@
     font-size: 1.1em;
     resize: none;
     overflow: hidden;
-    line-height: 1.2em;
+    line-height: 1.3em;
+    margin-bottom: pxToEm(10px);
+    border: 1px solid #b0b0b0;
+    padding: pxToEm(5px);
+    border-radius: pxToEm(5px);
   }
 
   &__conclusion-container {
@@ -70,6 +80,7 @@
   &__reset {
     padding: pxToEm(10px);
     border-radius: pxToEm(5px);
+    max-height: pxToEm(60px);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -81,8 +92,143 @@
   }
 }
 
-.to-fixed {
+
+.table-container {
+  overflow-x: auto;
+}
+
+.top-panel {
+  position: sticky;
+  top: 0;
+  user-select: none;
+  display: flex;
+  height: pxToEm(30px);
+  background-color: #b0b0b0;
+  overflow-x: auto;
+  gap: pxToEm(1px);
+  border-right: 1px solid #e2e2e2;
+  border-left: 1px solid #e2e2e2;
+}
+
+.screen-header {
   padding: pxToEm(10px);
+  padding-right: pxToEm(5px);
+  border-top-left-radius: pxToEm(10px);
+  border-top-right-radius: pxToEm(10px);
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  background: #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: pxToEm(5px);
+
+  &:hover {
+    background-color: #e3e3e3
+  }
+
+  &_main {
+    padding-right: pxToEm(10px);
+  }
+
+  &__name {
+    min-width: pxToEm(100px);
+    max-width: pxToEm(200px); 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  button {
+    background: transparent;
+    margin-left: auto;
+    width: pxToEm(20px);
+    height: pxToEm(20px);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    &:hover {
+      background: #f1f1f1;
+    }
+  }
+
+  &_active {
+    background: #fff;
+
+    &:hover {
+      background: #fff;
+    }
+  }
+}
+
+.tip {
+  line-height: 1.2em;
+}
+
+.patient-list {
+  margin-top: pxToEm(10px);
+  user-select: none;
+  display: flex;
+  width: pxToEm(400px);
+
+  &__title {
+    line-height: 1.2em;
+    margin-bottom: pxToEm(10px);
+  }
+
+  &__list {
+    padding: pxToEm(10px);
+    border: 1px solid #b0b0b0;
+    border-radius: pxToEm(5px);
+  }
+
+  &__item {
+    cursor: pointer;
+    display: flex;
+    gap: pxToEm(10px);
+    transition: all 0.15s ease-in-out;
+  }
+
+  &__item-content {
+    border: 1px solid #b0b0b0;
+    border-radius: pxToEm(5px);
+    padding: 0 pxToEm(10px);
+    height: pxToEm(30px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: #d7d7d7
+    }
+  }
+
+  &__item-name {
+    width: pxToEm(300px);
+    line-height: 1.7em;
+  }
+
+  &__search-container {
+    display: flex;
+    gap: pxToEm(5px);
+    align-items: center;
+    margin-bottom: pxToEm(10px);
+
+    
+  }
+
+  &__search-input {
+    width: pxToEm(300px);
+    border: 1px solid #b0b0b0;
+    border-radius: pxToEm(5px);
+    padding: pxToEm(5px);
+  }
+}
+
+.to-fixed {
+  padding: pxToEm(10px) 0;
   font-family: 'Courier New', Courier, monospace;
 
   &__label {
@@ -98,7 +244,7 @@
 }
 
 .download {
-  margin-top: pxToEm(20px);
+  margin-top: pxToEm(10px);
   padding: pxToEm(10px);
   border-radius: pxToEm(5px);
   display: flex;
@@ -108,6 +254,43 @@
 
   &:hover {
     background-color: #d7d7d7
+  }
+}
+
+.patient-data {
+  &__title {
+    font-size: pxToEm(24px);
+    font-weight: bold;
+    line-height: 1.2em;
+    margin-bottom: pxToEm(10px);
+  }
+
+  &__item {
+    display: flex;
+    gap: pxToEm(10px);
+    margin-bottom: pxToEm(10px);
+    font-size: pxToEm(16px);
+    align-items: center;
+
+    input {
+      border: 1px solid #b0b0b0;
+      border-radius: pxToEm(5px);
+      padding: pxToEm(5px);
+    }
+  }
+
+  &__label {
+    width: pxToEm(150px);
+  }
+
+  &__name-input {
+    width: pxToEm(400px);
+  }
+
+  select {
+    border: 1px solid #b0b0b0;
+    border-radius: pxToEm(5px);
+    padding: pxToEm(5px);
   }
 }
 
