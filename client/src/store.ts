@@ -141,6 +141,8 @@ class Store {
         redo: () => this._setCell(id, value), // Use private setter for redo
       });
       this.redoStack = []; // Clear redoStack on a new action
+      this.updatePdfConclusion(this.initialConclusion1, 1);
+      this.updatePdfConclusion(this.initialConclusion2, 2);
     } else if (oldValue === value && /^-?[0-9]*[.,]?[0-9]*$/.test(value)) {
       // Even if the value didn't change, update the cell if the input is valid.
       // This handles cases where user types, deletes, and re-types the same value.
@@ -150,6 +152,14 @@ class Store {
         `Invalid input for cell ${id}: "${value}". Only numbers, '.', ',', and '-' are allowed.`
       );
     }
+  }
+
+  get initialConclusion1() {
+    return this.conclusions.slice(0, 4).join('\n');
+  }
+
+  get initialConclusion2() {
+    return this.conclusions.slice(4).join('\n');
   }
 
   updatePatientName (name: string) { this.patient.name = name;  }

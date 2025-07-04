@@ -251,21 +251,23 @@ const Conclusions = observer(() => {
     <div className="conclusions">
       <div className="conclusions__title">Заключение</div>
       <div className="conclusions__subtitle">До пробы с бронхолитиком:</div>
-      <Conclusion arr={store.conclusions.slice(0, 4)} number={1} />
+      <Conclusion number={1} />
       <div className="conclusions__subtitle">После пробы с бронхолитиком:</div>
-      <Conclusion arr={store.conclusions.slice(4)} number={2} />
+      <Conclusion number={2} />
     </div>
   )
 })
 
-const Conclusion = observer(({ arr, number }: { arr: string[], number: 1 | 2 }) => {
-  const initialValue = arr.join('\n');
+const Conclusion = observer(({ number }: { number: 1 | 2 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    store.updatePdfConclusion(initialValue, number);
-    requestAnimationFrame(autoResizeTextarea);
+    store.updatePdfConclusion(store[`initialConclusion${number}`], number);
   }, []);
+
+  useEffect(() => {
+    requestAnimationFrame(autoResizeTextarea);
+  }, [store[`pdfConclusion${number}`]]);
 
   const autoResizeTextarea = () => {
     if (textareaRef.current) {
@@ -275,7 +277,7 @@ const Conclusion = observer(({ arr, number }: { arr: string[], number: 1 | 2 }) 
   };
 
   const handleReset = () => {
-    store.updatePdfConclusion(initialValue, number);
+    store.updatePdfConclusion(store[`initialConclusion${number}`], number);
     requestAnimationFrame(() => {
       autoResizeTextarea();
     })

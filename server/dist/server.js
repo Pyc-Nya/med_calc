@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // med_calc_server/src/server.ts
 const express_1 = __importDefault(require("express"));
 const body_parser_1 = __importDefault(require("body-parser"));
+const cors_1 = __importDefault(require("cors"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 // --- Хранилище данных (использование JSON-файла) ---
@@ -60,6 +61,7 @@ app.use(body_parser_1.default.json()); // Парсинг JSON-тел запро�
 // Обслуживание статических файлов
 // Это middleware должно идти ДО ваших API-эндпоинтов, чтобы сначала проверялись статические файлы.
 app.use(express_1.default.static(clientBuildPath));
+app.use((0, cors_1.default)({ origin: 'http://localhost:3000' }));
 // --- API-эндпоинты ---
 // Все ваши API-эндпоинты должны быть ПЕРЕД блоком, который отправляет index.html
 // для всех остальных запросов. Иначе запросы к /api будут перехватываться.
