@@ -18,6 +18,7 @@
     "pdfmake": "^0.2.20",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.3",
     "react-window": "^1.8.11",
     "sass-embedded": "^1.89.2",
     "terser": "^5.43.1",

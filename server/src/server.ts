@@ -4,7 +4,6 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid'; // Импорт для генерации уникальных ID
 
 // --- Определение типов данных для пациентов ---
 // Эти типы должны быть согласованы с тем, что вы ожидаете от клиента
@@ -101,7 +100,7 @@ app.use(bodyParser.json()); // Парсинг JSON-тел запросов
 // Это middleware должно идти ДО ваших API-эндпоинтов, чтобы сначала проверялись статические файлы.
 app.use(express.static(clientBuildPath));
 
-// app.use(cors({ origin: 'http://localhost:3000' }));
+app.use(cors({ origin: 'http://localhost:3000' }));
 
 // --- API-эндпоинты ---
 // Все ваши API-эндпоинты должны быть ПЕРЕД блоком, который отправляет index.html

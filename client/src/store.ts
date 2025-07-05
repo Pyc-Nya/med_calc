@@ -141,8 +141,6 @@ class Store {
         redo: () => this._setCell(id, value), // Use private setter for redo
       });
       this.redoStack = []; // Clear redoStack on a new action
-      this.updatePdfConclusion(this.initialConclusion1, 1);
-      this.updatePdfConclusion(this.initialConclusion2, 2);
     } else if (oldValue === value && /^-?[0-9]*[.,]?[0-9]*$/.test(value)) {
       // Even if the value didn't change, update the cell if the input is valid.
       // This handles cases where user types, deletes, and re-types the same value.
@@ -152,14 +150,16 @@ class Store {
         `Invalid input for cell ${id}: "${value}". Only numbers, '.', ',', and '-' are allowed.`
       );
     }
+    this.updatePdfConclusion(this.initialConclusion1, 1);
+    this.updatePdfConclusion(this.initialConclusion2, 2);
   }
 
   get initialConclusion1() {
-    return this.conclusions.slice(0, 4).join('\n');
+    return this.conclusions.slice(0, 5).join('\n');
   }
 
   get initialConclusion2() {
-    return this.conclusions.slice(4).join('\n');
+    return this.conclusions.slice(5).join('\n');
   }
 
   updatePatientName (name: string) { this.patient.name = name;  }
@@ -195,12 +195,14 @@ class Store {
     }
     this.activeScreenId = id; 
   }
-  createNewPatient () { 
+  createNewPatient (): string { 
     this.patient = mockPatient; 
     this.cells = mockCells;
     const id = uuidv4();
     this.screens[id] = { id: id, name: "Новый Пациент" };
     this.updateActiveScreen(id);
+
+    return id;
   }
   updateScreenName (id: string, name: string) { this.screens[id].name = name; }
   deleteScreen (id: string) { 
@@ -303,6 +305,26 @@ class Store {
     ]
   }
 
+  private get i6() {
+    return this.get("H6") <= 144
+            ? "Норма"
+            : this.get("H6") <= 170
+            ? "Умеренно увеличен"
+            : this.get("H6") <= 215
+            ? "Значительно увеличен"
+            : "Резко увеличен"
+  }
+
+  private get l6() {
+    return this.get("K6") <= 144
+          ? "Норма"
+          : this.get("K6") <= 170
+            ? "Умеренно увеличен"
+            : this.get("K6") <= 215
+              ? "Значительно увеличен"
+              : "Резко увеличен"
+  }
+
   private get row2(): Row {
     return [
       {editable: false, value: "Дыхательный импеданс (Z5)", isBold: true, id: "F6"},
@@ -310,13 +332,7 @@ class Store {
       {editable: true, value: this.cells["H6"].value, isBold: false, id: "H6"},
       {
         editable: false, 
-        value: this.get("H6") <= 144
-          ? "Норма"
-          : this.get("H6") <= 170
-          ? "Умеренно увеличен"
-          : this.get("H6") <= 215
-          ? "Значительно увеличен"
-          : "Резко увеличен", 
+        value: this.i6, 
         isBold: false, 
         id: "I6"
       },
@@ -324,18 +340,32 @@ class Store {
       {editable: true, value: this.cells["K6"].value, isBold: false, id: "K6"},
       {
         editable: false,
-        value: this.get("K6") <= 144
-          ? "Норма"
-          : this.get("K6") <= 170
-            ? "Умеренно увеличен"
-            : this.get("K6") <= 215
-              ? "Значительно увеличен"
-              : "Резко увеличен",
+        value: this.l6,
         isBold: false,
         id: "L6" 
       },
       {editable: false, value: "", isBold: false, id: "M6"},
     ]
+  }
+
+  private get i7() {
+    return this.get("H7") <= 137
+          ? "Норма"
+          : this.get("H7") <= 164
+            ? "Умеренно увеличен"
+            : this.get("H7") <= 211
+              ? "Значительно увеличен"
+              : "Резко увеличен"
+  }
+
+  private get l7() {
+    return this.get("K7") <= 137
+          ? "Норма"
+          : this.get("K7") <= 164
+            ? "Умеренно увеличен"
+            : this.get("K7") <= 211
+              ? "Значительно увеличен"
+              : "Резко увеличен";
   }
 
   private get row3(): Row {
@@ -358,13 +388,7 @@ class Store {
       {editable: true, value: this.cells["H7"].value, isBold: false, id: "H7"},
       {
         editable: false,
-        value: this.get("H7") <= 137
-          ? "Норма"
-          : this.get("H7") <= 164
-            ? "Умеренно увеличен"
-            : this.get("H7") <= 211
-              ? "Значительно увеличен"
-              : "Резко увеличен",
+        value: this.i7,
         isBold: false,
         id: "I7"
       },
@@ -372,18 +396,32 @@ class Store {
       {editable: true, value: this.cells["K7"].value, isBold: false, id: "K7"},
       {
         editable: false,
-        value: this.get("K7") <= 137
-          ? "Норма"
-          : this.get("K7") <= 164
-            ? "Умеренно увеличен"
-            : this.get("K7") <= 211
-              ? "Значительно увеличен"
-              : "Резко увеличен",
+        value: this.l7,
         isBold: false,
         id: "L7",
       },
       {editable: false, value: m7Value, isBold: false, id: "M7"},
     ]
+  }
+
+  private get i8() {
+    return this.get("H8") <= 136
+          ? "Норма"
+          : this.get("H8") <= 167
+            ? "Умеренно увеличен"
+            : this.get("H8") <= 220
+              ? "Значительно увеличен"
+              : "Резко увеличен"
+  }
+
+  private get l8 () {
+    return this.get("K8") <= 136
+          ? "Норма"
+          : this.get("K8") <= 167
+            ? "Умеренно увеличен"
+            : this.get("K8") <= 220
+              ? "Значительно увеличен"
+              : "Резко увеличен"
   }
 
   private get row4(): Row {
@@ -393,13 +431,7 @@ class Store {
       {editable: true, value: this.cells["H8"].value, isBold: false, id: "H8"},
       {
         editable: false,
-        value: this.get("H8") <= 136
-          ? "Норма"
-          : this.get("H8") <= 167
-            ? "Умеренно увеличен"
-            : this.get("H8") <= 220
-              ? "Значительно увеличен"
-              : "Резко увеличен",
+        value: this.i8,
         isBold: false,
         id: "I8",
       },
@@ -407,18 +439,32 @@ class Store {
       {editable: true, value: this.cells["K8"].value, isBold: false, id: "K8"},
       {
         editable: false,
-        value: this.get("K8") <= 136
-          ? "Норма"
-          : this.get("K8") <= 167
-            ? "Умеренно увеличен"
-            : this.get("K8") <= 220
-              ? "Значительно увеличен"
-              : "Резко увеличен",
+        value: this.l9,
         isBold: false,
         id: "L8",
       },
       {editable: false, value: "", isBold: false, id: "M8"},
     ]
+  }
+
+  private get i9 () {
+    return this.h9 <= 0.09
+          ? "Норма"
+          : this.h9 <= 0.17
+            ? "Умеренно увеличена"
+            : this.h9 <= 0.32
+              ? "Значительно увеличена"
+              : "Резко увеличена"
+  }
+
+  private get l9() {
+    return this.k9 <= 0.09
+          ? "Норма"
+          : this.k9 <= 0.17
+            ? "Умеренно увеличена"
+            : this.k9 <= 0.32
+              ? "Значительно увеличена"
+              : "Резко увеличена";
   }
 
   private get row5(): Row {
@@ -437,13 +483,7 @@ class Store {
       {editable: false, value: roundNumber(h9, this.toFixedValue), isBold: false, id: "H9"},
       {
         editable: false,
-        value: this.h9 <= 0.09
-          ? "Норма"
-          : this.h9 <= 0.17
-            ? "Умеренно увеличена"
-            : this.h9 <= 0.32
-              ? "Значительно увеличена"
-              : "Резко увеличена",
+        value: this.i9,
         isBold: false,
         id: "I9",
       },
@@ -451,18 +491,32 @@ class Store {
       {editable: false, value: roundNumber(k9, this.toFixedValue), isBold: false, id: "K9"},
       {
         editable: false,
-        value: this.k9 <= 0.09
-          ? "Норма"
-          : this.k9 <= 0.17
-            ? "Умеренно увеличена"
-            : this.k9 <= 0.32
-              ? "Значительно увеличена"
-              : "Резко увеличена",
+        value: this.l9,
         isBold: false,
         id: "L9",
       },
       {editable: false, value: roundNumber(this.k9 - this.h9, this.toFixedValue), isBold: false, id: "M9"},
     ]
+  }
+
+  private get i10() {
+    return this.get("H10") >= -0.15
+          ? "Норма"
+          : this.get("H10") >= -0.27
+            ? "Умеренно снижено"
+            : this.get("H10") >= -0.47
+              ? "Значительно снижено" 
+              : "Резко снижено"
+  }
+
+  private get l10() {
+    return  this.get("K10") >= -0.15
+          ? "Норма"
+          : this.get("K10") >= -0.27
+            ? "Умеренно снижено"
+            : this.get("K10") >= -0.47
+              ? "Значительно снижено"
+              : "Резко снижено"
   }
 
   private get row6(): Row {
@@ -472,13 +526,7 @@ class Store {
       {editable: true, value: this.cells["H10"].value, isBold: false, id: "H10"},
       {
         editable: false,
-        value: this.get("H10") >= -0.15
-          ? "Норма"
-          : this.get("H10") >= -0.27
-            ? "Умеренно снижено"
-            : this.get("H10") >= -0.47
-              ? "Значительно снижено" 
-              : "Резко снижено",
+        value: this.i10,
         isBold: false,
         id: "I10",
       },
@@ -486,18 +534,32 @@ class Store {
       {editable: true, value: this.cells["K10"].value, isBold: false, id: "K10"},
       {
         editable: false,
-        value: this.get("K10") >= -0.15
-          ? "Норма"
-          : this.get("K10") >= -0.27
-            ? "Умеренно снижено"
-            : this.get("K10") >= -0.47
-              ? "Значительно снижено"
-              : "Резко снижено",
+        value: this.l10,
         isBold: false,
         id: "L10",
       },
       {editable: false, value: "", isBold: false, id: "M10"},
     ]
+  }
+
+  private get i11() {
+    return this.get("H11") <= 0.16
+          ? "Норма"
+          : this.get("H11") <= 0.27
+            ? "Умеренно увеличен"
+            : this.get("H11") <= 0.46
+              ? "Значительно увеличен"
+              : "Резко увеличен"
+  }
+
+  private get l11() {
+    return this.get("K11") <= 0.16
+          ? "Норма"
+          : this.get("K11") <= 0.27
+            ? "Умеренно увеличен"
+            : this.get("K11") <= 0.46
+              ? "Значительно увеличен"
+              : "Резко увеличен"
   }
 
   private get row7(): Row {
@@ -507,13 +569,7 @@ class Store {
       {editable: true, value: this.cells["H11"].value, isBold: false, id: "H11"},
       {
         editable: false,
-        value: this.get("H11") <= 0.16
-          ? "Норма"
-          : this.get("H11") <= 0.27
-            ? "Умеренно увеличен"
-            : this.get("H11") <= 0.46
-              ? "Значительно увеличен"
-              : "Резко увеличен",
+        value: this.i11,
         isBold: false,
         id: "I11",
       },
@@ -521,18 +577,32 @@ class Store {
       {editable: true, value: this.cells["K11"].value, isBold: false, id: "K11"},
       {
         editable: false,
-        value: this.get("K11") <= 0.16
-          ? "Норма"
-          : this.get("K11") <= 0.27
-            ? "Умеренно увеличен"
-            : this.get("K11") <= 0.46
-              ? "Значительно увеличен"
-              : "Резко увеличен",
+        value: this.l11,
         isBold: false,
         id: "L11",
       },
       {editable: false, value: "", isBold: false, id: "M11"},
     ]
+  }
+
+  private get i12() {
+    return this.get("H12") <= 15
+          ? "Норма"
+          : this.get("H12") <= 21
+            ? "Умеренно увеличена"
+            : this.get("H12") <= 32
+              ? "Значительно увеличена"
+              : "Резко увеличена"
+  }
+
+  private get l12() {
+    return this.get("K12") <= 15
+          ? "Норма"
+          : this.get("K12") <= 21
+            ? "Умеренно увеличена"
+            : this.get("K12") <= 32
+              ? "Значительно увеличена"
+              : "Резко увеличена"
   }
 
   private get row8(): Row {
@@ -555,13 +625,7 @@ class Store {
       {editable: true, value: this.cells["H12"].value, isBold: false, id: "H12"},
       {
         editable: false,
-        value: this.get("H12") <= 15
-          ? "Норма"
-          : this.get("H12") <= 21
-            ? "Умеренно увеличена"
-            : this.get("H12") <= 32
-              ? "Значительно увеличена"
-              : "Резко увеличена",
+        value: this.i12,
         isBold: false,
         id: "I12",
       },
@@ -569,13 +633,7 @@ class Store {
       {editable: true, value: this.cells["K12"].value, isBold: false, id: "K12"},
       {
         editable: false,
-        value: this.get("K12") <= 15
-          ? "Норма"
-          : this.get("K12") <= 21
-            ? "Умеренно увеличена"
-            : this.get("K12") <= 32
-              ? "Значительно увеличена"
-              : "Резко увеличена",
+        value: this.l12,
         isBold: false,
         id: "L12",
       },
@@ -697,12 +755,22 @@ class Store {
     }
   }
 
+  public get conclusion0_1(): string {
+    return `Дыхательный импеданс: ${this.i6}. Резистанс на частоте 5Гц: ${this.i7}. Резистанс на частоте 20 Гц: ${this.i8}. Абсолютная частотная зависимость: ${this.i9}. Реактанс на частоте 5 Гц: ${this.i10}. Сдвиг реактивного сопротивления на частоте 5 Гц: ${this.i11}. Резонансная частота: ${this.i12}.`;
+  }
+
+  public get conclusion0_2(): string {
+    return `Дыхательный импеданс: ${this.l6}. Резистанс на частоте 5Гц: ${this.l7}. Резистанс на частоте 20 Гц: ${this.l8}. Абсолютная частотная зависимость: ${this.l9}. Реактанс на частоте 5 Гц: ${this.l10}. Сдвиг реактивного сопротивления на частоте 5 Гц: ${this.l11}. Резонансная частота: ${this.l12}.`;
+  }
+
   get conclusions(): string[] {
     return [
+      this.conclusion0_1,
       this.conclusion1,
       this.conclusion2,
       this.conclusion3,
       this.conclusion4,
+      this.conclusion0_2,
       this.conclusion5,
       this.conclusion6,
       this.conclusion7,
@@ -723,6 +791,7 @@ class Store {
         this.patient = this.patientsCache[id];
         this.cells = this.patientsCache[id].cells;
         this.doctorName = this.patientsCache[id].doctorName;
+        this.screens[id] = { id: id, name: this.patientsCache[id].reportName };
         this.updateActiveScreen(id);
       })
       return;
